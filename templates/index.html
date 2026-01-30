@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EasyOCR Flask App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Fallback/Inline styles for elements created dynamically in app.py's upload route */
+        h3 { color: #5a2a83; }
+        pre { background: #f7f7f7; padding: 15px; border-radius: 10px; text-align: left; font-family: monospace; white-space: pre-wrap; }
+        img { max-width: 100%; height: auto; margin-top: 15px; border: 1px solid #ddd; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        a { color: #667eea; text-decoration: none; font-weight: bold; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>📸 Image OCR & Text Extractor</h1>
+        <p>Upload an image to extract and clean text using EasyOCR and SpellChecker.</p>
+
+        <form id="uploadForm" enctype="multipart/form-data" class="upload-box">
+            <input type="file" name="file" id="fileInput" required>
+            <br>
+            <button type="submit">Upload & Extract Text</button>
+        </form>
+
+        <div id="result" class="status"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        const resultDiv = document.getElementById('result');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const fileInput = document.getElementById('fileInput');
+            if (!fileInput.files[0]) {
+                alert("Please select a file!");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            resultDiv.innerHTML = "<p>Processing... ⏳</p>";
+            // Disable button during processing
+            document.querySelector('button[type="submit"]').disabled = true;
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                // Re-enable button
+                document.querySelector('button[type="submit"]').disabled = false;
+
+                // The server returns HTML content directly
+                const data = await response.text();
+                resultDiv.innerHTML = data;
+
+                if (!response.ok) {
+                    // This handles the server returning a 4xx or 5xx status
+                    resultDiv.innerHTML = `<p style="color:red; font-weight: bold;">OCR failed: ${data}</p>`;
+                }
+
+            } catch (err) {
+                // This handles network errors
+                document.querySelector('button[type="submit"]').disabled = false;
+                resultDiv.innerHTML = `<p style="color:red; font-weight: bold;">Network Error: ${err.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
